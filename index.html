@@ -1,0 +1,149 @@
+<html>
+  <head> 
+    <script type="text/javascript"
+               src="https://maps.google.com/maps/api/js?key=PASTE_YOUR_API_KEY_HERE"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <style>
+      body {
+        text-align: center;
+      }
+      body, #origin, #destination {
+        font-size: 120%;
+      }
+      #content {
+        margin-top: 10ex;
+      }
+      #duration {
+        font-size: 140%;
+        margin: 20px;
+      }
+      #updatebutton {
+        padding: 1ex;
+        vertical-align: top;
+      }
+      #chart {
+        border: 1px solid #555;
+        height: 300px;
+        width: 600px;
+      }
+      #chart, #map {
+        display: inline-block;
+        margin: 0 auto;
+      }
+      #timestamp, #timestamp a {
+        color: #ccc;
+      }
+      #timestamp {
+        padding: 2ex;
+      }
+    </style>
+  </head> 
+  <body style="font-family: Arial;" onload="onLoad()"> 
+    <div id="content">
+      <input id="origin" placeholder="Origin"></input>
+      <input id="destination" placeholder="Destination"></input>
+      <button id="updatebutton" onclick="update()">Update</button>
+      <div id="duration"></div>
+      <div id="chart"></div>
+      <div id="map" style="width: 30ex; height: 30ex;"></div> 
+      <div id="timestamp">Everything is updated in real time every 5 minutes. Last reloaded at <span id="lastreloaded">...</span>. Bookmark this page to save the route. <a href="https://github.com/lmanul/commute-time-tracker">Contribute</a></div>
+    </div>
+
+    <script type="text/javascript"> 
+    
+      var PAGE_TITLE = 'Commute Time Tracker';
+
+      google.charts.load('current', {'packages':['corechart']});
+      google.charts.setOnLoadCallback(onLoad);
+
+      var directionsService = new google.maps.DirectionsService();
+      var directionsDisplay = new google.maps.DirectionsRenderer();
+      var orig, dest;
+      var data = [['Time stamp', 'Estimated duration']];
+
+      var map = new google.maps.Map(document.getElementById('map'), {
+        zoom: 7,
+        mapTypeId: google.maps.MapTypeId.ROADMAP
+      });
+        
+      directionsDisplay.setMap(map);
+
+      function onLoad() {
+        document.getElementById("destination")
+            .addEventListener("keyup", function(event) {
+              event.preventDefault();
+              if (event.keyCode == 13) {
+                document.getElementById("updatebutton").click();
+              }
+        });
+        var regex = /#from\/(.+)\/to\/(.+)/;
+        var match = regex.exec(window.location.href);
+        if (!match) {
+          return;
+        }
+        orig = decodeURIComponent(match[1]);
+        dest = decodeURIComponent(match[2]);
+        if (!!orig) {
+          document.getElementById('origin').value = orig;
+        }
+        if (!!dest) {
+          document.getElementById('destination').value = dest;        
+        }
+        if (!!orig && !!dest) {
+          update();
+        }
+      }
+
+      function zeroPad(n, width) {
+        n = n + '';
+        return n.length >= width ? n : new Array(width - n.length + 1).join('0') + n;
+      }
+
+      function update() {
+        var orig = document.getElementById('origin').value;
+        var dest = document.getElementById('destination').value;
+
+        if (!!orig && !!dest) {
+          var request = {
+            origin: orig, 
+            destination: dest,
+            travelMode: google.maps.DirectionsTravelMode.DRIVING,
+            drivingOptions: {
+              departureTime: new Date(Date.now()),
+              trafficModel: 'bestguess'
+            }
+          }
+        }
+    
+        directionsService.route(request, function(response, status) {
+          if (status == google.maps.DirectionsStatus.OK) {
+            directionsDisplay.setDirections(response);
+            document.getElementById('duration').textContent =
+                response.routes[0].legs[0].duration_in_traffic.text;
+            var now = new Date();
+            var durationMin = response.routes[0].legs[0].duration_in_traffic.value / 60;
+            document.title = Math.floor(durationMin) + "' - " + PAGE_TITLE;
+            data.push([now, durationMin]);
+            if (!!google.visualization.arrayToDataTable) {
+              var graphableData = google.visualization.arrayToDataTable(data);
+              var options = {
+                title: '',
+                curveType: 'function',
+                legend: { position: 'bottom' }
+              };
+              var chart = new google.visualization.LineChart(document.getElementById('chart'));
+              chart.draw(graphableData, options);
+            }
+            console.log(data);
+          }
+        });
+        var now = new Date();
+        var span = document.getElementById('lastreloaded');
+        span.textContent = zeroPad(now.getHours(), 2) + ':' + zeroPad(now.getMinutes(), 2);
+        window.location.href = window.location.pathname + '#from/' + encodeURIComponent(orig) + "/to/" + dest;
+        window.setTimeout(update, 300000);
+      }
+
+    </script> 
+  </body> 
+</html>
