@@ -1,8 +1,7 @@
 <html>
   <head> 
-    <script type="text/javascript"
-               src="https://maps.google.com/maps/api/js?key=PASTE_YOUR_API_KEY_HERE"></script>
-    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script src="https://maps.google.com/maps/api/js?key=PASTE_YOUR_API_KEY_HERE"></script>
+    <script src="https://www.gstatic.com/charts/loader.js"></script>
     <style>
       body {
         text-align: center;
@@ -46,7 +45,12 @@
       <div id="duration"></div>
       <div id="chart"></div>
       <div id="map" style="width: 30ex; height: 30ex;"></div> 
-      <div id="timestamp">Everything is updated in real time every 5 minutes. Last reloaded at <span id="lastreloaded">...</span>. Bookmark this page to save the route. <a href="https://github.com/lmanul/commute-time-tracker">Contribute</a></div>
+      <div id="timestamp">
+        Everything is updated in real time every 5 minutes.
+        Last reloaded at <span id="lastreloaded">...</span>.
+        Bookmark this page to save the route.
+        <a href="https://github.com/lmanul/commute-time-tracker">Contribute</a>
+      </div>
     </div>
 
     <script type="text/javascript"> 
@@ -96,7 +100,8 @@
 
       function zeroPad(n, width) {
         n = n + '';
-        return n.length >= width ? n : new Array(width - n.length + 1).join('0') + n;
+        return n.length >= width ? n :
+            new Array(width - n.length + 1).join('0') + n;
       }
 
       function update() {
@@ -121,7 +126,8 @@
             document.getElementById('duration').textContent =
                 response.routes[0].legs[0].duration_in_traffic.text;
             var now = new Date();
-            var durationMin = response.routes[0].legs[0].duration_in_traffic.value / 60;
+            var durationMin =
+                response.routes[0].legs[0].duration_in_traffic.value / 60;
             document.title = Math.floor(durationMin) + "' - " + PAGE_TITLE;
             data.push([now, durationMin]);
             if (!!google.visualization.arrayToDataTable) {
@@ -131,7 +137,8 @@
                 curveType: 'function',
                 legend: { position: 'bottom' }
               };
-              var chart = new google.visualization.LineChart(document.getElementById('chart'));
+              var chart = new google.visualization.LineChart(
+                  document.getElementById('chart'));
               chart.draw(graphableData, options);
             }
             console.log(data);
@@ -139,8 +146,10 @@
         });
         var now = new Date();
         var span = document.getElementById('lastreloaded');
-        span.textContent = zeroPad(now.getHours(), 2) + ':' + zeroPad(now.getMinutes(), 2);
-        window.location.href = window.location.pathname + '#from/' + encodeURIComponent(orig) + "/to/" + dest;
+        span.textContent = zeroPad(now.getHours(), 2) + ':' + 
+            zeroPad(now.getMinutes(), 2);
+        window.location.href = window.location.pathname + '#from/' +
+            encodeURIComponent(orig) + "/to/" + encodeURIComponent(dest);
         window.setTimeout(update, 300000);
       }
 
