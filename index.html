@@ -5,29 +5,49 @@
     <style>
       body {
         text-align: center;
+        margin: 0;
       }
       body, #origin, #destination {
         font-size: 120%;
       }
       #content {
-        margin-top: 10ex;
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        height: 100%;
+     }
+      #query {
+        margin: 20px auto auto auto;
+        text-align: left;
+        width: 80%;
+        display: flex;
+      }
+      #origin, #destination {
+        margin: 2px;
+        width: 50%;
+        flex: 1 1 50%;
+        padding: 0 4px;
+      }
+      #updatebutton {
+        margin: 2px;
+        padding: 1ex;
+        vertical-align: top;
       }
       #duration {
         font-size: 140%;
         margin: 20px;
       }
-      #updatebutton {
-        padding: 1ex;
-        vertical-align: top;
+      #visuals {
+        flex: 1 1 5%;
+        display: flex;
+        flex-direction: row;
       }
       #chart {
         border: 1px solid #555;
-        height: 300px;
-        width: 600px;
       }
       #chart, #map {
-        display: inline-block;
-        margin: 0 auto;
+        flex: 1 1 0;
+        margin: 10px 10px;
       }
       #timestamp, #timestamp a {
         color: #ccc;
@@ -36,15 +56,19 @@
         padding: 2ex;
       }
     </style>
-  </head> 
-  <body style="font-family: Arial;" onload="onLoad()"> 
+  </head>
+  <body style="font-family: Arial;" onload="onLoad()" onresize="updateLayout(); updateGraph(); updateMap();">
     <div id="content">
-      <input id="origin" placeholder="Origin"></input>
-      <input id="destination" placeholder="Destination"></input>
-      <button id="updatebutton" onclick="update()">Update</button>
+      <div id="query">
+        <input id="origin" placeholder="Origin"></input><br/>
+        <input id="destination" placeholder="Destination"></input>
+        <button id="updatebutton" onclick="update()">Update</button>
+      </div>
       <div id="duration"></div>
-      <div id="chart"></div>
-      <div id="map" style="width: 30ex; height: 30ex;"></div> 
+      <div id="visuals">
+        <div id="chart"></div>
+        <div id="map"></div>
+      </div>
       <div id="timestamp">
         Everything is updated in real time every 5 minutes.
         Last reloaded at <span id="lastreloaded">...</span>.
@@ -62,8 +86,10 @@
 
       var directionsService = new google.maps.DirectionsService();
       var directionsDisplay = new google.maps.DirectionsRenderer();
+      var trafficLayer = new google.maps.TrafficLayer();
       var orig, dest;
       var data = [['Time stamp', 'Estimated duration']];
+      var lastResponse = null;
 
       var map = new google.maps.Map(document.getElementById('map'), {
         zoom: 7,
@@ -71,6 +97,7 @@
       });
         
       directionsDisplay.setMap(map);
+      trafficLayer.setMap(map);
 
       function onLoad() {
         document.getElementById("destination")
@@ -122,25 +149,16 @@
     
         directionsService.route(request, function(response, status) {
           if (status == google.maps.DirectionsStatus.OK) {
-            directionsDisplay.setDirections(response);
+            lastResponse = response;
+            updateMap();
             document.getElementById('duration').textContent =
                 response.routes[0].legs[0].duration_in_traffic.text;
             var now = new Date();
             var durationMin =
                 response.routes[0].legs[0].duration_in_traffic.value / 60;
-            document.title = Math.floor(durationMin) + "' - " + PAGE_TITLE;
+            document.title = Math.round(durationMin) + "' - " + PAGE_TITLE;
             data.push([now, durationMin]);
-            if (!!google.visualization.arrayToDataTable) {
-              var graphableData = google.visualization.arrayToDataTable(data);
-              var options = {
-                title: '',
-                curveType: 'function',
-                legend: { position: 'bottom' }
-              };
-              var chart = new google.visualization.LineChart(
-                  document.getElementById('chart'));
-              chart.draw(graphableData, options);
-            }
+            updateGraph();
             console.log(data);
           }
         });
@@ -151,6 +169,32 @@
         window.location.href = window.location.pathname + '#from/' +
             encodeURIComponent(orig) + "/to/" + encodeURIComponent(dest);
         window.setTimeout(update, 300000);
+      }
+
+      function updateLayout() {
+        // This hack is required (at least in Chrome) to get the chart width to shrink correctly
+        document.getElementById('chart').style.width = '0';
+      }
+
+      function updateMap() {
+        if (!!lastResponse) {
+          directionsDisplay.setDirections(lastResponse);
+        }
+      }
+
+      function updateGraph() {
+        if (!!google.visualization.arrayToDataTable) {
+          var graphableData = google.visualization.arrayToDataTable(data);
+          var options = {
+            title: '',
+            curveType: 'function',
+            legend: { position: 'bottom' },
+            vAxis: { minValue: 0 }
+          };
+          var chart = new google.visualization.LineChart(
+              document.getElementById('chart'));
+          chart.draw(graphableData, options);
+        }
       }
 
     </script> 
