@@ -23,5 +23,5 @@ Replace "PASTE_YOUR_API_KEY_HERE" with the key.
 Just use File -> Open.
 
 
-[[https://github.com/lmanul/commute-time-tracker/blob/master/screenshot.png|alt=Screenshot]]
+![Screenshot](https://github.com/lmanul/commute-time-tracker/blob/master/screenshot.png)
 
